@@ -1,5 +1,13 @@
 import { SignedOut } from "../auth/session";
-import { ApiError, createHttp, Offline, traceparent, UpgradeRequired, type HttpOptions } from "./http";
+import {
+  ApiError,
+  createHttp,
+  Offline,
+  traceIdOf,
+  traceparent,
+  UpgradeRequired,
+  type HttpOptions,
+} from "./http";
 
 function response(status: number, body?: unknown): Response {
   return new Response(body === undefined ? null : JSON.stringify(body), {
@@ -43,7 +51,9 @@ describe("createHttp", () => {
       body: { name: "Ada" },
       idempotencyKey: "k1",
     });
-    expect(res).toEqual({ status: 202, body: { eventId: "e1", status: "accepted" } });
+    expect(res).toMatchObject({ status: 202, body: { eventId: "e1", status: "accepted" } });
+    // No traceresponse: the trace is the one this app started.
+    expect(traceIdOf(header(0, "traceparent"))).toBe(res.traceId);
     expect(calls[0]?.url).toBe("https://example.vrixel.com/mobile/api/v1/greetings/ada");
     expect(calls[0]?.init.body).toBe('{"name":"Ada"}');
     expect(header(0, "Authorization")).toBe("Bearer access-1");
@@ -102,7 +112,21 @@ describe("createHttp", () => {
     const { http } = setup([
       new Response("oops", { status: 502, headers: { "content-type": "text/plain" } }),
     ]);
-    expect(await http.send({ method: "GET", path: "/x" })).toEqual({ status: 502, body: null });
+    expect(await http.send({ method: "GET", path: "/x" })).toMatchObject({ status: 502, body: null });
+  });
+
+  it("keeps the trace the API names, for error reports", async () => {
+    const trace = "4bf92f3577b34da6a3ce929d0e0e4736";
+    const { http } = setup([
+      new Response("{}", {
+        status: 503,
+        headers: { "content-type": "application/json", traceresponse: `00-${trace}-00f067aa0ba902b7-01` },
+      }),
+    ]);
+    const res = await http.send({ method: "GET", path: "/x" });
+    expect(res.traceId).toBe(trace);
+    expect(ApiError.from(res, "GET /x")).toMatchObject({ status: 503, endpoint: "GET /x", traceId: trace });
+    expect(traceIdOf("junk")).toBe("");
   });
 });
 

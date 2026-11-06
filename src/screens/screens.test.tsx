@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Linking } from "react-native";
 import { ApiError, Offline } from "../api/http";
 import { AppProvider } from "../AppContext";
+import { reportError } from "../errors";
 import type { Services } from "../services";
 import { fakeServices, scriptedHttp } from "../test/fakes";
 import { ChangesScreen } from "./ChangesScreen";
@@ -10,6 +11,7 @@ import { GreetingsScreen, slug } from "./GreetingsScreen";
 import { SignInScreen } from "./SignInScreen";
 import { UpdateScreen } from "./UpdateScreen";
 
+jest.mock("../errors", () => ({ reportError: jest.fn() }));
 jest.mock("expo-router", () => ({
   Link: ({ children }: { children: ReactNode }) => children,
 }));
@@ -28,15 +30,18 @@ describe("GreetingsScreen", () => {
   });
 
   it.each([
-    [new Offline(), "No connection. Try again when you're back online."],
-    [new ApiError(403, "Forbidden", "You can't read greetings"), "You can't read greetings"],
-    [new ApiError(500, "Server Error"), "Server Error"],
-    [new Error("boom"), "Something went wrong."],
-  ])("explains a failed read (%s)", async (error, text) => {
+    [new Offline(), "No connection. Try again when you're back online.", false],
+    [new ApiError(403, "Forbidden", "You can't read greetings"), "You can't read greetings", false],
+    [new ApiError(500, "Server Error"), "Server Error", true],
+    [new Error("boom"), "Something went wrong.", true],
+  ])("explains a failed read (%s), reporting only faults", async (error, text, reported) => {
+    jest.mocked(reportError).mockClear();
     await show(await fakeServices({ api: { greeting: () => Promise.reject(error) } }), <GreetingsScreen />);
     await fireEvent.changeText(screen.getByLabelText("Name"), "Ada");
     await fireEvent.press(screen.getByRole("button", { name: "Get greeting" }));
     expect(await screen.findByText(text)).toBeOnTheScreen();
+    if (reported) expect(reportError).toHaveBeenCalledWith(error);
+    else expect(reportError).not.toHaveBeenCalled();
   });
 
   it("saves a greeting offline and says it is waiting", async () => {

@@ -11,6 +11,7 @@
  * view hierarchy, console output or what was typed.
  */
 import * as Sentry from "@sentry/react-native";
+import { ApiError } from "./api/http";
 import type { AppConfig } from "./config";
 
 type ErrorEvent = Parameters<NonNullable<Sentry.ReactNativeOptions["beforeSend"]>>[0];
@@ -21,8 +22,20 @@ const pathOnly = (url: unknown): string | undefined => {
   return cut === -1 ? url : url.slice(0, cut);
 };
 
-/** Strips an event down to what may leave the device. Exported for tests. */
-export function scrub(event: ErrorEvent): ErrorEvent {
+type EventHint = Parameters<NonNullable<Sentry.ReactNativeOptions["beforeSend"]>>[1];
+
+/** Strips an event down to what may leave the device, and ties a failed API call to the
+ * backend's trace (tags trace_id, endpoint, status) so the SDLC tool sees one incident. */
+export function scrub(event: ErrorEvent, hint?: EventHint): ErrorEvent {
+  const error = hint?.originalException;
+  if (error instanceof ApiError) {
+    event.tags = {
+      ...event.tags,
+      ...(error.traceId ? { trace_id: error.traceId } : {}),
+      ...(error.endpoint ? { endpoint: error.endpoint } : {}),
+      status: String(error.status),
+    };
+  }
   delete event.user;
   delete event.extra;
   delete event.message;
@@ -51,6 +64,12 @@ export function scrub(event: ErrorEvent): ErrorEvent {
   return event;
 }
 
+/** Reports an error the app handled (shown to the person) but that someone should fix. Does
+ * nothing while reporting is off. */
+export function reportError(error: unknown): void {
+  Sentry.captureException(error);
+}
+
 /** Starts Sentry when the build has a DSN; returns whether it did. */
 export function startErrors(config: AppConfig, sentry: Pick<typeof Sentry, "init"> = Sentry): boolean {
   if (!config.sentryDsn) return false;
@@ -63,7 +82,7 @@ export function startErrors(config: AppConfig, sentry: Pick<typeof Sentry, "init
     // Traces go through OpenTelemetry on the backend; the app sends errors and sessions only.
     tracesSampleRate: 0,
     maxBreadcrumbs: 30,
-    beforeSend: (event) => scrub(event),
+    beforeSend: (event, hint) => scrub(event, hint),
   });
   return true;
 }

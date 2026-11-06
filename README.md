@@ -72,6 +72,12 @@ Development and test builds install beside the store app, with `.<env>` appended
 into issues, and release health (crash-free sessions per version) to watch a staged rollout. Sentry's
 issue alerts reach the SDLC tool as incident signals (`/api/signals/sentry`).
 
+A failed API call keeps its trace (the one the API names in `traceresponse`, else the
+`traceparent` the app sent): a report about it is tagged with that `trace_id`, the endpoint and the
+status, so the SDLC tool joins it to the backend's errors from the same request (one incident).
+Server failures a screen shows are reported through `reportError`; being offline or a 4xx is not a
+fault and isn't.
+
 Only an error's type, its stack and route paths leave the phone: no error messages, query strings,
 user details, screenshots, view hierarchy, console output or taps (`scrub`). Keep names out of
 routes: use ids. An app with PHI sends reports only when `SENTRY_BAA=true`, meaning the Sentry plan
