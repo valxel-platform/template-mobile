@@ -22,22 +22,41 @@ export interface ApiRequest {
 export interface ApiResponse {
   status: number;
   body: unknown;
+  /** The request's trace: the one the API named (traceresponse), else the one this app started. */
+  traceId?: string;
 }
 
-/** An RFC 9457 problem from the API: show its title or detail, never a raw body. */
+/** An RFC 9457 problem from the API: show its title or detail, never a raw body. `endpoint` and
+ * `traceId` tie a reported error to the backend's errors from the same request. */
 export class ApiError extends Error {
   constructor(
     readonly status: number,
     readonly title: string,
     readonly detail?: string,
+    readonly endpoint = "",
+    readonly traceId = "",
   ) {
     super(`API ${String(status)}: ${detail ?? title}`);
+    this.name = "ApiError";
   }
 
-  static from(response: ApiResponse): ApiError {
+  static from(response: ApiResponse, endpoint = ""): ApiError {
     const problem = (response.body ?? {}) as { title?: string; detail?: string };
-    return new ApiError(response.status, problem.title ?? `HTTP ${String(response.status)}`, problem.detail);
+    return new ApiError(
+      response.status,
+      problem.title ?? `HTTP ${String(response.status)}`,
+      problem.detail,
+      endpoint,
+      response.traceId ?? "",
+    );
   }
+}
+
+const TRACE = /^00-([0-9a-f]{32})-[0-9a-f]{16}-[0-9a-f]{2}$/;
+
+/** The trace id in a W3C traceparent or traceresponse value, or "". */
+export function traceIdOf(value: string | null | undefined): string {
+  return TRACE.exec(value?.trim() ?? "")?.[1] ?? "";
 }
 
 /** The device couldn't reach the API. */
@@ -90,6 +109,7 @@ export function createHttp(options: HttpOptions): Http {
       "X-App-Platform": options.platform,
       traceparent: traceparent(options.randomBytes),
     };
+    const started = traceIdOf(headers.traceparent);
     if (request.body !== undefined) headers["Content-Type"] = "application/json";
     if (request.idempotencyKey) headers["Idempotency-Key"] = request.idempotencyKey;
     const controller = new AbortController();
@@ -109,7 +129,7 @@ export function createHttp(options: HttpOptions): Http {
     }
     const type = res.headers.get("content-type") ?? "";
     const body: unknown = type.includes("json") ? await res.json().catch(() => null) : null;
-    return { status: res.status, body };
+    return { status: res.status, body, traceId: traceIdOf(res.headers.get("traceresponse")) || started };
   };
 
   return {

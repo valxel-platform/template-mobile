@@ -7,6 +7,7 @@ import { useState } from "react";
 import { saveGreeting } from "../api/client";
 import { ApiError, Offline } from "../api/http";
 import { useOutbox, useServices } from "../AppContext";
+import { reportError } from "../errors";
 import { Body, Button, Card, Field, Heading, Notice, Screen, Title } from "../ui/components";
 
 const ID = /^[a-z0-9][a-z0-9-]{0,63}$/;
@@ -44,6 +45,8 @@ export function GreetingsScreen() {
             ? (e.detail ?? e.title)
             : "Something went wrong.",
       );
+      // A failure the person saw that isn't theirs to fix: report it, tied to the API's trace.
+      if (!(e instanceof Offline) && (!(e instanceof ApiError) || e.status >= 500)) reportError(e);
     } finally {
       setBusy(false);
     }

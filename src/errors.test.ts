@@ -1,8 +1,10 @@
 import type { ReactNativeOptions } from "@sentry/react-native";
-import { scrub, startErrors } from "./errors";
+import * as Sentry from "@sentry/react-native";
+import { ApiError } from "./api/http";
+import { reportError, scrub, startErrors } from "./errors";
 import { config } from "./test/fakes";
 
-jest.mock("@sentry/react-native", () => ({ init: jest.fn() }));
+jest.mock("@sentry/react-native", () => ({ init: jest.fn(), captureException: jest.fn() }));
 
 type Event = Parameters<typeof scrub>[0];
 const fakeSentry = () => ({ init: jest.fn<undefined, [ReactNativeOptions]>() });
@@ -76,4 +78,16 @@ it("keeps an error's type and stack and drops what a person typed or who they ar
   // A route's path segments can still name someone: keep identifiers, not names, in routes.
   expect(JSON.stringify({ ...out, breadcrumbs: [] })).not.toContain("Jane");
   expect(JSON.stringify(out.breadcrumbs?.[1])).not.toContain("Jane");
+});
+
+it("ties a failed API call's report to the backend's trace", () => {
+  const trace = "4bf92f3577b34da6a3ce929d0e0e4736";
+  const err = new ApiError(503, "Unavailable", undefined, "GET /api/v1/greetings", trace);
+  const out = scrub({ type: undefined, tags: { a: "b" } }, { originalException: err });
+  expect(out.tags).toEqual({ a: "b", trace_id: trace, endpoint: "GET /api/v1/greetings", status: "503" });
+  expect(scrub({ type: undefined }, { originalException: new ApiError(500, "x") }).tags).toEqual({
+    status: "500",
+  });
+  reportError(err);
+  expect(Sentry.captureException).toHaveBeenCalledWith(err);
 });

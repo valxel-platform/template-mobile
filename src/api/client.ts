@@ -28,7 +28,7 @@ export function createApiClient(http: Http): ApiClient {
         method: "GET",
         path: `/api/v1/greetings?name=${encodeURIComponent(name)}`,
       });
-      if (response.status !== 200) throw ApiError.from(response);
+      if (response.status !== 200) throw ApiError.from(response, "GET /api/v1/greetings");
       return response.body as Greeting;
     },
   };
