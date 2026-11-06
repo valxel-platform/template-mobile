@@ -16,9 +16,13 @@ export interface AppConfig {
   phi: boolean;
   /** The URL scheme Keycloak redirects back to */
   scheme: string;
+  /** Sentry's DSN for error reports; empty when reporting is off (src/errors.ts). */
+  sentryDsn: string;
 }
 
 export class ConfigError extends Error {}
+
+const DSN = /^https:\/\/[0-9a-f]{16,64}@[A-Za-z0-9.-]{1,253}\/[0-9]{1,20}$/;
 
 const LOCAL = /^http:\/\/(localhost|127\.0\.0\.1|10\.0\.2\.2)(:\d+)?(\/|$)/;
 
@@ -49,7 +53,11 @@ export function readConfig(extra: unknown): AppConfig {
       .filter(Boolean),
     phi: app.phi === true,
     scheme: text("scheme"),
+    sentryDsn: typeof app.sentryDsn === "string" ? app.sentryDsn.trim() : "",
   };
+  if (config.sentryDsn && !DSN.test(config.sentryDsn)) {
+    throw new ConfigError("extra.app.sentryDsn must look like https://<key>@<host>/<project id>");
+  }
   if (config.env === "production" && (LOCAL.test(config.origin) || LOCAL.test(config.issuer))) {
     throw new ConfigError("a production build must not point at a local server");
   }

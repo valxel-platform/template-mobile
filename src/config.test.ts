@@ -39,4 +39,11 @@ describe("readConfig", () => {
     expect(() => readConfig({ app: { ...app, clientId: " " } })).toThrow(/clientId is missing/);
     expect(readConfig({ app: { ...app, phi: "yes" } }).phi).toBe(false);
   });
+
+  it("takes a Sentry DSN only in its usual shape", () => {
+    expect(readConfig({ app }).sentryDsn).toBe("");
+    const dsn = "https://0123456789abcdef0123456789abcdef@o1.ingest.sentry.io/42";
+    expect(readConfig({ app: { ...app, sentryDsn: ` ${dsn} ` } }).sentryDsn).toBe(dsn);
+    expect(() => readConfig({ app: { ...app, sentryDsn: "https://evil.example/x" } })).toThrow(/sentryDsn/);
+  });
 });
