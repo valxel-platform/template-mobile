@@ -1,0 +1,10 @@
+appId: ${APP_ID}
+name: sign-out
+tags: [smoke]
+---
+- scrollUntilVisible:
+    element: "Sign out"
+- tapOn: "Sign out"
+- extendedWaitUntil:
+    visible: "Sign in"
+    timeout: 20000

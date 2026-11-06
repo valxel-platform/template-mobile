@@ -1,0 +1,81 @@
+{
+  "cli": {
+    "version": ">= 18.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "base": {
+      "node": "22.20.0",
+      "env": {
+        "APP_ID": "com.vrixel.example",
+        "APP_NAME": "Example",
+        "APP_CLIENT_ID": "example-mobile",
+        "APP_SCOPES": "openid profile offline_access example-api",
+        "APP_PHI": "false"
+      }
+    },
+    "development": {
+      "extends": "base",
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "APP_ENV": "development",
+        "APP_ORIGIN": "http://10.0.2.2:8080",
+        "APP_ISSUER": "http://10.0.2.2:8180/realms/example"
+      }
+    },
+    "test-dev": {
+      "extends": "base",
+      "distribution": "internal",
+      "channel": "test-dev",
+      "android": { "buildType": "apk" },
+      "ios": { "simulator": true },
+      "env": {
+        "APP_ENV": "dev",
+        "APP_ORIGIN": "https://dev.example.vrixel.com",
+        "APP_ISSUER": "https://id.dev.vrixel.com/realms/example"
+      }
+    },
+    "test-staging": {
+      "extends": "test-dev",
+      "channel": "test-staging",
+      "env": {
+        "APP_ENV": "staging",
+        "APP_ORIGIN": "https://staging.example.vrixel.com",
+        "APP_ISSUER": "https://id.staging.vrixel.com/realms/example"
+      }
+    },
+    "staging": {
+      "extends": "base",
+      "distribution": "store",
+      "channel": "staging",
+      "autoIncrement": true,
+      "env": {
+        "APP_ENV": "staging",
+        "APP_ORIGIN": "https://staging.example.vrixel.com",
+        "APP_ISSUER": "https://id.staging.vrixel.com/realms/example"
+      }
+    },
+    "production": {
+      "extends": "base",
+      "distribution": "store",
+      "channel": "production",
+      "autoIncrement": true,
+      "env": {
+        "APP_ENV": "production",
+        "APP_ORIGIN": "https://example.vrixel.com",
+        "APP_ISSUER": "https://id.vrixel.com/realms/example"
+      }
+    }
+  },
+  "submit": {
+    "staging": {
+      "android": { "track": "internal", "releaseStatus": "completed" },
+      "ios": { "ascAppId": "0000000000" }
+    },
+    "production": {
+      "android": { "track": "production", "releaseStatus": "inProgress", "rollout": 0.01 },
+      "ios": { "ascAppId": "0000000000" }
+    }
+  }
+}

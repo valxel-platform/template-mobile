@@ -1,0 +1,143 @@
+{
+  "consumer": {
+    "name": "template-mobile"
+  },
+  "interactions": [
+    {
+      "description": "a greeting saved from the mobile app's outbox",
+      "pending": false,
+      "providerStates": [
+        {
+          "name": "greetings are available"
+        }
+      ],
+      "request": {
+        "body": {
+          "content": {
+            "message": "Hello",
+            "name": "Ada"
+          },
+          "contentType": "application/json",
+          "encoded": false
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ],
+          "Idempotency-Key": [
+            "0b0f4a3e-6c8e-4a39-9d55-2f4b2c1d9e10"
+          ]
+        },
+        "matchingRules": {
+          "header": {
+            "Idempotency-Key": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          }
+        },
+        "method": "PUT",
+        "path": "/api/v1/greetings/ada"
+      },
+      "response": {
+        "body": {
+          "content": {
+            "eventId": "e7c1",
+            "status": "accepted"
+          },
+          "contentType": "application/json",
+          "encoded": false
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "matchingRules": {
+          "body": {
+            "$.eventId": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          }
+        },
+        "status": 202
+      },
+      "type": "Synchronous/HTTP"
+    },
+    {
+      "description": "a request for a greeting from the mobile app",
+      "pending": false,
+      "providerStates": [
+        {
+          "name": "greetings are available"
+        }
+      ],
+      "request": {
+        "headers": {
+          "Accept": [
+            "application/json"
+          ]
+        },
+        "method": "GET",
+        "path": "/api/v1/greetings",
+        "query": {
+          "name": [
+            "Ada"
+          ]
+        }
+      },
+      "response": {
+        "body": {
+          "content": {
+            "message": "Hello, Ada!"
+          },
+          "contentType": "application/json",
+          "encoded": false
+        },
+        "headers": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "matchingRules": {
+          "body": {
+            "$.message": {
+              "combine": "AND",
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ]
+            }
+          }
+        },
+        "status": 200
+      },
+      "type": "Synchronous/HTTP"
+    }
+  ],
+  "metadata": {
+    "pact-js": {
+      "version": "17.1.4"
+    },
+    "pactRust": {
+      "ffi": "0.5.8",
+      "models": "1.3.16"
+    },
+    "pactSpecification": {
+      "version": "4.0"
+    }
+  },
+  "provider": {
+    "name": "template-service"
+  }
+}

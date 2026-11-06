@@ -1,0 +1,10 @@
+# Maestro flows: run on an emulator or simulator against a deployed environment (release.yml), or
+# locally with `maestro test .maestro`. Flows tagged smoke are the shortest path through the app.
+flows:
+  - "flows/*.yaml"
+executionOrder:
+  continueOnFailure: false
+  flowsOrder:
+    - sign-in
+    - save-greeting-offline
+    - sign-out

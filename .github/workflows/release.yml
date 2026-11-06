@@ -1,0 +1,217 @@
+# Store apps can't be deployed continuously: each release is a build that people install and keep
+# for months. The Vrixel SDLC drives this workflow instead of a deployment:
+#
+#   vrixel-release, stage dev:        test build (APK) against dev, Maestro on an emulator
+#                                     -> "integration / report", "release / dev"
+#   vrixel-release, stage staging:    test build against staging, Maestro -> "e2e / report";
+#                                     store build to TestFlight and Play's internal track -> "release / staging"
+#   vrixel-release, stage production: store build, submitted to the App Store and to Play's production
+#                                     track at 1% -> "release / production"
+#   vrixel-rollout {fraction, context}: Play vitals health check -> <context> (e.g. "rollout / 10%");
+#                                     if healthy, widen the Play rollout to the fraction (1 completes it)
+#   vrixel-rollout {halt: true}:      halt the Play rollout
+#
+# The App Store side uses Apple's phased release (seven days, set in App Store Connect when the
+# version is submitted for review); pause it there if Play's health check fails.
+#
+# Secrets: EXPO_TOKEN (EAS), PLAY_SERVICE_ACCOUNT_JSON (rollout), TEST_USERNAME and TEST_PASSWORD
+# (a test account in the dev and staging realms; never a real person's). Apple and Google
+# credentials for submitting live in EAS (eas credentials).
+name: release
+
+on:
+  repository_dispatch:
+    types: [vrixel-release, vrixel-rollout]
+  workflow_dispatch:
+    inputs:
+      action: { description: "release or rollout", required: true, type: choice, options: [release, rollout] }
+      stage:
+        {
+          description: "dev, staging or production",
+          required: false,
+          type: choice,
+          options: [dev, staging, production],
+        }
+      sha: { description: "Commit to release", required: true }
+      fraction: { description: "rollout: share of Android users, e.g. 0.1 (1 completes)", required: false }
+      halt: { description: "rollout: halt instead", required: false, type: boolean }
+
+permissions:
+  contents: read
+
+env:
+  ACTION: ${{ github.event.action == 'vrixel-rollout' && 'rollout' || github.event.action == 'vrixel-release' && 'release' || inputs.action }}
+  STAGE: ${{ github.event.client_payload.stage || inputs.stage || 'production' }}
+  REPORT_SHA: ${{ github.event.client_payload.sha || inputs.sha }}
+  FRACTION: ${{ github.event.client_payload.fraction || inputs.fraction }}
+  HALT: ${{ github.event.client_payload.halt || inputs.halt }}
+  CONTEXT: ${{ github.event.client_payload.context || 'rollout / health' }}
+  EAS: npx --yes eas-cli@27.5.0
+  MAESTRO_VERSION: "1.41.0"
+
+concurrency:
+  group: release-${{ github.event.client_payload.stage || inputs.stage || 'rollout' }}
+  cancel-in-progress: false
+
+jobs:
+  test-build:
+    name: test build
+    if: (github.event.action == 'vrixel-release' || inputs.action == 'release') && (github.event.client_payload.stage || inputs.stage) != 'production'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    outputs:
+      apk: ${{ steps.build.outputs.apk }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.REPORT_SHA }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Build on EAS
+        id: build
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          $EAS build --profile "test-$STAGE" --platform android --non-interactive --wait --json > build.json
+          echo "apk=$(jq -r '.[0].artifacts.buildUrl' build.json)" >> "$GITHUB_OUTPUT"
+
+  e2e:
+    name: maestro
+    needs: test-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      statuses: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.REPORT_SHA }}
+          persist-credentials: false
+      - run: bash .github/scripts/emulator.sh 35
+      - name: Install the app
+        env:
+          APK: ${{ needs.test-build.outputs.apk }}
+        run: |
+          curl -fsSL -o app.apk "$APK"
+          aapt2=$(ls "$ANDROID_HOME"/build-tools/*/aapt2 | tail -1)
+          echo "APP_ID=$("$aapt2" dump packagename app.apk)" >> "$GITHUB_ENV"
+          adb install -r app.apk
+      - name: Install Maestro
+        run: |
+          curl -fsSL "https://github.com/mobile-dev-inc/maestro/releases/download/cli-${MAESTRO_VERSION}/maestro.zip" -o maestro.zip
+          unzip -q maestro.zip -d "$HOME"
+          echo "$HOME/maestro/bin" >> "$GITHUB_PATH"
+      - name: Run the flows
+        id: run
+        env:
+          TEST_USERNAME: ${{ secrets.TEST_USERNAME }}
+          TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
+        run: |
+          echo "suite=$([ "$STAGE" = dev ] && echo integration || echo e2e)" >> "$GITHUB_OUTPUT"
+          mkdir -p reports
+          maestro test .maestro --format junit --output reports/junit.xml \
+            -e APP_ID="$APP_ID" -e TEST_USERNAME="$TEST_USERNAME" -e TEST_PASSWORD="$TEST_PASSWORD" -e MAESTRO_RUN="$GITHUB_RUN_ID"
+      - name: Report results
+        if: ${{ !cancelled() }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 .github/scripts/report.py --context "${{ steps.run.outputs.suite || 'e2e' }} / report" --junit reports/junit.xml
+      - name: Report the release
+        if: ${{ !cancelled() && env.STAGE == 'dev' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STATE: ${{ job.status == 'success' && 'success' || 'failure' }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/statuses/$REPORT_SHA" -f state="$STATE" -f context="release / dev" -f description="test build on an emulator: $STATE" -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ !cancelled() }}
+        with:
+          name: maestro
+          path: |
+            reports/
+            ~/.maestro/tests/
+          retention-days: 14
+
+  store:
+    name: store build
+    # Staging: only once the flows passed against staging. Production: no test build first.
+    needs: e2e
+    if: >-
+      !cancelled() && (needs.e2e.result == 'success' || needs.e2e.result == 'skipped') &&
+      (github.event.action == 'vrixel-release' || inputs.action == 'release') &&
+      (github.event.client_payload.stage || inputs.stage) != 'dev'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      statuses: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.REPORT_SHA }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Build and submit on EAS
+        id: build
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          $EAS build --profile "$STAGE" --platform all --non-interactive --wait --auto-submit-with-profile "$STAGE" --json > build.json
+          echo "versions=$(jq -r '[.[] | "\(.platform) \(.appVersion) (\(.appBuildVersion))"] | join(", ")' build.json)" >> "$GITHUB_OUTPUT"
+      - name: Report the release
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STATE: ${{ job.status == 'success' && 'success' || 'failure' }}
+          VERSIONS: ${{ steps.build.outputs.versions }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/statuses/$REPORT_SHA" -f state="$STATE" -f context="release / $STAGE" -f description="${VERSIONS:-build failed}" -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ !cancelled() }}
+        with:
+          name: builds-${{ env.STAGE }}
+          path: build.json
+          retention-days: 90
+
+  rollout:
+    name: rollout
+    if: github.event.action == 'vrixel-rollout' || inputs.action == 'rollout'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      statuses: write
+    env:
+      PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.REPORT_SHA }}
+          persist-credentials: false
+      - run: pip install --quiet --requirement .github/scripts/requirements.txt
+      - run: echo "PACKAGE=$(jq -r '.build.base.env.APP_ID' eas.json)" >> "$GITHUB_ENV"
+      - name: Halt
+        if: env.HALT == 'true'
+        run: python3 .github/scripts/play.py halt --package "$PACKAGE"
+      - name: Check health
+        if: env.HALT != 'true'
+        id: health
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          result=$(python3 .github/scripts/play.py health --package "$PACKAGE")
+          state=$(echo "$result" | jq -r .state)
+          gh api "repos/$GITHUB_REPOSITORY/statuses/$REPORT_SHA" -f state="$state" -f context="$CONTEXT" -f description="$(echo "$result" | jq -r .description)"
+          echo "state=$state" >> "$GITHUB_OUTPUT"
+      - name: Widen the rollout
+        if: env.HALT != 'true' && steps.health.outputs.state == 'success' && env.FRACTION != ''
+        run: python3 .github/scripts/play.py rollout --package "$PACKAGE" --fraction "$FRACTION"

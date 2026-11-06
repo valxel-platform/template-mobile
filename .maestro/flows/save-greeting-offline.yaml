@@ -1,0 +1,17 @@
+# A change made with no signal waits on the device and is sent once the device is back online.
+appId: ${APP_ID}
+name: save-greeting-offline
+---
+- assertVisible: "Greetings"
+- setAirplaneMode: enabled
+- tapOn: "Name"
+- inputText: "Maestro ${MAESTRO_RUN}"
+- tapOn: "Message"
+- inputText: "Saved offline"
+- hideKeyboard
+- tapOn: "Save greeting"
+- assertVisible: "1 change waiting to send"
+- setAirplaneMode: disabled
+- extendedWaitUntil:
+    notVisible: "1 change waiting to send"
+    timeout: 60000

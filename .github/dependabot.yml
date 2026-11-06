@@ -1,0 +1,29 @@
+version: 2
+updates:
+  # Expo pins React Native and its native modules per SDK: take SDK upgrades as one change
+  # (`npx expo install expo@latest --fix`), not package by package.
+  - package-ecosystem: npm
+    directory: /
+    schedule: { interval: weekly }
+    groups:
+      dev-dependencies: { dependency-type: development, update-types: [minor, patch] }
+    open-pull-requests-limit: 10
+    ignore:
+      - dependency-name: "expo"
+        update-types: [version-update:semver-major]
+      - dependency-name: "expo-*"
+        update-types: [version-update:semver-major]
+      - dependency-name: "@expo/*"
+        update-types: [version-update:semver-major]
+      - dependency-name: "react-native"
+      - dependency-name: "react-native-*"
+      - dependency-name: "react"
+      - dependency-name: "react-dom"
+      - dependency-name: "typescript"
+        update-types: [version-update:semver-major]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }
+  - package-ecosystem: pip
+    directory: /.github/scripts
+    schedule: { interval: weekly }
