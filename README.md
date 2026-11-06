@@ -22,6 +22,7 @@ stages and stays installed for months.
 | Offline        | Changes wait in an outbox (SQLite) with an idempotency key each, and are sent in order when there is signal                              | Fits Kafka-first (VX-16): a retried change is applied once        |
 | PHI            | `APP_PHI=true`: SQLCipher-encrypted local data, biometric unlock, no screenshots, blurred app switcher, wipe on sign-out                 | Data on a lost phone stays unreadable                             |
 | Feature flags  | OpenFeature with OFREP from the product's Flipt                                                                                          | Features ship dark in a store build and turn on later             |
+| Errors         | Sentry (`@sentry/react-native`) when `SENTRY_DSN` is set: JavaScript errors, native crashes, release health; types and stacks only       | Problems on phones reach the incident flow                        |
 | Releases       | EAS Build and Submit; TestFlight and Play's internal track for staging; staged rollout for production; over-the-air updates for JS fixes | Store review and old versions are part of the plan                |
 
 ## Checks and how the pipeline reads them
@@ -60,8 +61,23 @@ EAS build profiles (`eas.json`) set them per environment:
 | `APP_CLIENT_ID` | `example-mobile`                              | This app's public client in the realm        |
 | `APP_SCOPES`    | `openid profile offline_access example-api`   | The product's API scope puts its audience in |
 | `APP_PHI`       | `true`                                        | The app shows or stores PHI                  |
+| `SENTRY_DSN`    | `https://<key>@o1.ingest.sentry.io/42`        | Error and crash reports (unset: off)         |
+| `SENTRY_BAA`    | `true`                                        | Needed for reports from an app with PHI      |
 
 Development and test builds install beside the store app, with `.<env>` appended to the id.
+
+## Errors and crashes
+
+`src/errors.ts` starts Sentry when the build has a DSN: JavaScript errors and native crashes, grouped
+into issues, and release health (crash-free sessions per version) to watch a staged rollout. Sentry's
+issue alerts reach the SDLC tool as incident signals (`/api/signals/sentry`).
+
+Only an error's type, its stack and route paths leave the phone: no error messages, query strings,
+user details, screenshots, view hierarchy, console output or taps (`scrub`). Keep names out of
+routes: use ids. An app with PHI sends reports only when `SENTRY_BAA=true`, meaning the Sentry plan
+is covered by a business associate agreement; otherwise `app.config.ts` leaves the DSN out of the
+build. Upload source maps and native debug files from `release.yml` with a Sentry auth token if you
+want readable stacks.
 
 ## Signing in
 

@@ -15,6 +15,8 @@ import type { ConfigContext, ExpoConfig } from "expo/config";
  * | APP_CLIENT_ID           | example-mobile                             |
  * | APP_SCOPES              | openid profile offline_access example-api  |
  * | APP_PHI                 | true: the app shows or stores PHI          |
+ * | SENTRY_DSN              | Sentry project for error reports (optional)|
+ * | SENTRY_BAA              | true: Sentry is under a BAA (PHI apps)     |
  * | EAS_PROJECT_ID          | the EAS project, for builds and updates    |
  */
 const env = (name: string, fallback = ""): string =>
@@ -25,6 +27,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const appId = env("APP_ID", "com.vrixel.template");
   const phi = env("APP_PHI", "false") === "true";
   const projectId = env("EAS_PROJECT_ID");
+  // Error reports leave the device: an app with PHI sends them only under a BAA (src/errors.ts).
+  const sentryDsn = phi && env("SENTRY_BAA") !== "true" ? "" : env("SENTRY_DSN");
   if (appEnv !== "development") {
     // A store or tester build must say where its product is; local defaults would ship broken.
     const missing = ["APP_ID", "APP_ORIGIN", "APP_ISSUER", "APP_CLIENT_ID"].filter((name) => !env(name));
@@ -96,6 +100,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         scopes: env("APP_SCOPES", "openid profile offline_access"),
         phi,
         scheme: appId + suffix,
+        sentryDsn,
       },
     },
   };

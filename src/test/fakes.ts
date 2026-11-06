@@ -14,6 +14,7 @@ export const config: AppConfig = {
   scopes: ["openid", "profile", "offline_access"],
   phi: false,
   scheme: "com.vrixel.example",
+  sentryDsn: "",
 };
 
 /** A JWT-shaped token with these claims (unsigned: only ever decoded for display). */

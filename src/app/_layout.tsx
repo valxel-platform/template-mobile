@@ -4,6 +4,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AppProvider, useSessionState, useUpgradeRequired } from "../AppContext";
+import { startErrors } from "../errors";
 import { flagProvider, startFlags } from "../flags";
 import { protectScreens } from "../privacy";
 import { SignInScreen } from "../screens/SignInScreen";
@@ -28,6 +29,7 @@ export default function RootLayout() {
   useEffect(() => {
     createServices()
       .then(async (s) => {
+        startErrors(s.config);
         await protectScreens(s.config.phi);
         void startFlags(flagProvider(s.config.origin));
         setServices(s);
