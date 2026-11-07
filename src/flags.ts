@@ -10,16 +10,54 @@
  *   return kiosk ? <KioskCheckIn /> : <FrontDeskCheckIn />;
  *
  * The app reads flags over OFREP from the product's origin (`<origin>/ofrep/`, served for the
- * web app too). Until the first answer, and with no signal, every flag is off.
+ * web app too), as this install (`installKey`), so gradual releases work. Until the first answer,
+ * and with no signal, every flag is off.
  */
 import { OFREPWebProvider } from "@openfeature/ofrep-web-provider";
 import { OpenFeature, useBooleanFlagValue, type Provider } from "@openfeature/react-sdk";
+import * as Crypto from "expo-crypto";
+import * as SecureStore from "expo-secure-store";
 
 export function flagProvider(origin: string): Provider {
   return new OFREPWebProvider({ baseUrl: origin, pollInterval: 60_000 });
 }
 
-export function startFlags(provider: Provider): Promise<void> {
+const DEVICE_KEY = "vrixel.flags.install";
+
+type KeyStore = Pick<typeof SecureStore, "getItemAsync" | "setItemAsync">;
+
+/**
+ * A random id for this install, kept on the device. The tool releases features gradually (on for
+ * 5% of users, then 25%, ...), and Flipt picks who gets a feature by this id, so each install keeps
+ * the same answer as the share grows. It says nothing about the person and goes only to the flag
+ * server. If it can't be stored, a fresh one is used for this run.
+ */
+export async function installKey(
+  store: KeyStore = SecureStore,
+  uuid: () => string = Crypto.randomUUID,
+): Promise<string> {
+  try {
+    const have = await store.getItemAsync(DEVICE_KEY);
+    if (have) return have;
+  } catch {
+    // unreadable: make one below
+  }
+  const made = uuid();
+  try {
+    await store.setItemAsync(DEVICE_KEY, made);
+  } catch {
+    // unwritable: this run still gets a consistent answer
+  }
+  return made;
+}
+
+/** Start reading flags as this install. Until the first answer, and with no signal, flags are off. */
+export async function startFlags(provider: Provider, key?: string): Promise<void> {
+  try {
+    await OpenFeature.setContext({ targetingKey: key ?? (await installKey()) });
+  } catch {
+    // without a key every install gets the same answer: still correct, just not gradual
+  }
   return OpenFeature.setProviderAndWait(provider).catch(() => undefined);
 }
 
