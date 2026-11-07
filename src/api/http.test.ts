@@ -78,6 +78,17 @@ describe("createHttp", () => {
     await expect(http.send({ method: "GET", path: "/x" })).rejects.toThrow(SignedOut);
   });
 
+  it("tells gradual releases about server failures and no answer, not the person's mistakes", async () => {
+    const onFailure = jest.fn();
+    const { http } = setup([response(503), response(400), new TypeError("no signal")], { onFailure });
+    await http.send({ method: "GET", path: "/api/v1/greetings" });
+    expect(onFailure).toHaveBeenCalledTimes(1);
+    await http.send({ method: "GET", path: "/api/v1/greetings" });
+    expect(onFailure).toHaveBeenCalledTimes(1);
+    await expect(http.send({ method: "GET", path: "/api/v1/greetings" })).rejects.toBeInstanceOf(Offline);
+    expect(onFailure).toHaveBeenCalledTimes(2);
+  });
+
   it("reports no signal as Offline", async () => {
     const { http } = setup([new TypeError("Network request failed")]);
     await expect(http.send({ method: "GET", path: "/x" })).rejects.toThrow(Offline);

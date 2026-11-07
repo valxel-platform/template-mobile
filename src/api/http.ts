@@ -88,6 +88,8 @@ export interface HttpOptions {
   randomBytes: (count: number) => Uint8Array;
   /** Called when the BFF says this version is too old. */
   onUpgradeRequired?: () => void;
+  /** Called when a call fails for the person: a 5xx or no answer (gradual releases, cohorts.ts). */
+  onFailure?: () => void;
   timeoutMs?: number;
 }
 
@@ -123,10 +125,12 @@ export function createHttp(options: HttpOptions): Http {
         signal: controller.signal,
       });
     } catch (e) {
+      options.onFailure?.();
       throw new Offline(e);
     } finally {
       clearTimeout(timer);
     }
+    if (res.status >= 500) options.onFailure?.();
     const type = res.headers.get("content-type") ?? "";
     const body: unknown = type.includes("json") ? await res.json().catch(() => null) : null;
     return { status: res.status, body, traceId: traceIdOf(res.headers.get("traceresponse")) || started };

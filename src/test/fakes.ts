@@ -76,7 +76,8 @@ export async function fakeServices(
   const session = new Session(memoryVault(options.signedIn === false ? null : tokens()), fakeOidc());
   await session.restore();
   let n = 0;
-  const outbox = new Outbox(memoryStore(), options.http ?? scriptedHttp(), {
+  const http = options.http ?? scriptedHttp();
+  const outbox = new Outbox(memoryStore(), http, {
     uuid: () => `cmd-${String(++n)}`,
   });
   session.onSignOut(() => outbox.clear());
@@ -86,5 +87,6 @@ export async function fakeServices(
     outbox,
     api: { greeting: () => Promise.resolve({ message: "Hello, Ada!" }), ...options.api },
     upgrade: { required: false, listeners: new Set() },
+    http,
   };
 }

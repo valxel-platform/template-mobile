@@ -1,10 +1,15 @@
 import type { ReactNativeOptions } from "@sentry/react-native";
 import * as Sentry from "@sentry/react-native";
 import { ApiError } from "./api/http";
-import { reportError, scrub, startErrors } from "./errors";
+import { noteFlag, reportError, scrub, startErrors } from "./errors";
 import { config } from "./test/fakes";
 
-jest.mock("@sentry/react-native", () => ({ init: jest.fn(), captureException: jest.fn() }));
+jest.mock("@sentry/react-native", () => ({
+  init: jest.fn(),
+  captureException: jest.fn(),
+  featureFlagsIntegration: () => ({ name: "FeatureFlags" }),
+  getClient: () => undefined,
+}));
 
 type Event = Parameters<typeof scrub>[0];
 const fakeSentry = () => ({ init: jest.fn<undefined, [ReactNativeOptions]>() });
@@ -26,6 +31,7 @@ it("with a DSN, reports errors and sessions but no screenshots, views or people"
     attachScreenshot: false,
     attachViewHierarchy: false,
     tracesSampleRate: 0,
+    integrations: [{ name: "FeatureFlags" }], // each event names the flags and their values
   });
   const sent = opts.beforeSend!({ type: undefined, message: "x", user: { id: "1" } }, {});
   expect(sent).toEqual({ type: undefined, breadcrumbs: [], logentry: undefined });
@@ -90,4 +96,13 @@ it("ties a failed API call's report to the backend's trace", () => {
   });
   reportError(err);
   expect(Sentry.captureException).toHaveBeenCalledWith(err);
+});
+
+it("names each evaluated flag on later error events, while reporting is on", () => {
+  const addFeatureFlag = jest.fn();
+  const getIntegrationByName = jest.fn(() => ({ addFeatureFlag }));
+  noteFlag("ms.ms-feat-3.kiosk", true, { getClient: () => ({ getIntegrationByName }) } as never);
+  expect(getIntegrationByName).toHaveBeenCalledWith("FeatureFlags");
+  expect(addFeatureFlag).toHaveBeenCalledWith("ms.ms-feat-3.kiosk", true);
+  expect(() => noteFlag("ms.x", false)).not.toThrow(); // reporting off: nothing to tell
 });

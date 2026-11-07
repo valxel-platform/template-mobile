@@ -11,7 +11,8 @@
  *
  * The app reads flags over OFREP from the product's origin (`<origin>/ofrep/`, served for the
  * web app too), as this install (`installKey`), so gradual releases work. Until the first answer,
- * and with no signal, every flag is off.
+ * and with no signal, every flag is off. The app's layout adds a hook so every flag the app reads
+ * is counted for the tool's on/off comparison (cohorts.ts) and named on error reports (errors.ts).
  */
 import { OFREPWebProvider } from "@openfeature/ofrep-web-provider";
 import { OpenFeature, useBooleanFlagValue, type Provider } from "@openfeature/react-sdk";
