@@ -2,7 +2,7 @@ import { OpenFeature, OpenFeatureProvider, TypedInMemoryProvider } from "@openfe
 import { render, screen, waitFor } from "@testing-library/react-native";
 import * as ScreenCapture from "expo-screen-capture";
 import { Text } from "react-native";
-import { flagProvider, startFlags, useFeature } from "./flags";
+import { flagProvider, installKey, startFlags, useFeature } from "./flags";
 import { protectScreens } from "./privacy";
 import { Body, Notice, Title } from "./ui/components";
 
@@ -40,6 +40,7 @@ describe("flags", () => {
           disabled: false,
         },
       }),
+      "install-test",
     );
     await render(
       <OpenFeatureProvider>
@@ -47,6 +48,31 @@ describe("flags", () => {
       </OpenFeatureProvider>,
     );
     await waitFor(() => expect(screen.getByText("kiosk")).toBeOnTheScreen());
+    await OpenFeature.clearProviders();
+  });
+
+  it("asks for flags as this install, with the same key every time", async () => {
+    const saved: Record<string, string> = {};
+    const store = {
+      getItemAsync: jest.fn((k: string) => Promise.resolve(saved[k] ?? null)),
+      setItemAsync: jest.fn((k: string, v: string) => {
+        saved[k] = v;
+        return Promise.resolve();
+      }),
+    };
+    let n = 0;
+    const uuid = () => `install-${++n}`;
+    const first = await installKey(store, uuid);
+    expect(first).toBe("install-1");
+    expect(await installKey(store, uuid)).toBe("install-1");
+    const broken = {
+      getItemAsync: jest.fn(async () => Promise.reject(new Error("locked"))),
+      setItemAsync: jest.fn(async () => Promise.reject(new Error("locked"))),
+    };
+    expect(await installKey(broken, () => "fresh")).toBe("fresh");
+
+    await startFlags(new TypedInMemoryProvider({}), "install-1");
+    expect(OpenFeature.getContext().targetingKey).toBe("install-1");
     await OpenFeature.clearProviders();
   });
 
