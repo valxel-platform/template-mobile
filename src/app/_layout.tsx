@@ -1,10 +1,12 @@
-import { OpenFeatureProvider } from "@openfeature/react-sdk";
+import { OpenFeature, OpenFeatureProvider } from "@openfeature/react-sdk";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
+import { AppState } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AppProvider, useSessionState, useUpgradeRequired } from "../AppContext";
-import { startErrors } from "../errors";
+import { noteFlag, startErrors } from "../errors";
+import { cohortHook, startCohorts } from "../cohorts";
 import { flagProvider, startFlags } from "../flags";
 import { protectScreens } from "../privacy";
 import { SignInScreen } from "../screens/SignInScreen";
@@ -31,7 +33,14 @@ export default function RootLayout() {
       .then(async (s) => {
         startErrors(s.config);
         await protectScreens(s.config.phi);
+        // Every flag read counts for gradual releases and is named on error reports.
+        OpenFeature.addHooks(cohortHook(undefined, noteFlag));
         void startFlags(flagProvider(s.config.origin));
+        startCohorts({
+          http: s.http,
+          foreground: () => AppState.currentState === "active",
+          errorUtils: ErrorUtils,
+        });
         setServices(s);
       })
       .catch((e: unknown) => setFailure(e instanceof Error ? e.message : String(e)))

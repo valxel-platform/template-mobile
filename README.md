@@ -78,7 +78,10 @@ status, so the SDLC tool joins it to the backend's errors from the same request 
 Server failures a screen shows are reported through `reportError`; being offline or a 4xx is not a
 fault and isn't.
 
-Only an error's type, its stack and route paths leave the phone: no error messages, query strings,
+Each event also names the feature flags this install evaluated and their values (Sentry's feature
+flags integration). An error that happens only with a feature on is plain in the issue.
+
+Only an error's type, its stack, route paths and flag values leave the phone: no error messages, query strings,
 user details, screenshots, view hierarchy, console output or taps (`scrub`). Keep names out of
 routes: use ids. An app with PHI sends reports only when `SENTRY_BAA=true`, meaning the Sentry plan
 is covered by a business associate agreement; otherwise `app.config.ts` leaves the DSN out of the
@@ -143,6 +146,15 @@ send its version (`If-Match`) and let the service answer 412.
 As in the web template: `useFeature("<product>.<feature>.<flag>")`. A store build can carry a
 feature switched off; the SDLC tool switches it on at release, with no new build. With no signal
 every flag reads as off.
+
+**Gradual releases.** The tool turns a feature on for a growing share of installs and stops if the
+people who have it fail more than the people who don't. `src/cohorts.ts` counts user-minutes: each
+minute the app is in the foreground counts once for every flag the app has read, on this install's
+side. The minute counts as failed if it had an uncaught JavaScript error, a reported error, or an
+API call that failed (a 5xx or no answer; a 4xx isn't). Every minute the counts go to the BFF
+(`POST <origin>/mobile/flag-cohorts`, with the person's token), which adds them up for everyone
+and logs them for the tool. Only flag keys, on or off, and counts leave the phone. Signed out,
+nothing is sent.
 
 ## Releases
 

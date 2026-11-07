@@ -8,10 +8,12 @@
  *
  * What leaves the device: the error's type, its stack and the screen's route. Never error
  * messages (they can echo what a person typed), request queries, user details, screenshots, the
- * view hierarchy, console output or what was typed.
+ * view hierarchy, console output or what was typed. Each event names the feature flags this
+ * install evaluated and their values, so an error that only happens with a feature on is plain.
  */
 import * as Sentry from "@sentry/react-native";
 import { ApiError } from "./api/http";
+import { cohorts } from "./cohorts";
 import type { AppConfig } from "./config";
 
 type ErrorEvent = Parameters<NonNullable<Sentry.ReactNativeOptions["beforeSend"]>>[0];
@@ -67,7 +69,17 @@ export function scrub(event: ErrorEvent, hint?: EventHint): ErrorEvent {
 /** Reports an error the app handled (shown to the person) but that someone should fix. Does
  * nothing while reporting is off. */
 export function reportError(error: unknown): void {
+  cohorts.fail();
   Sentry.captureException(error);
+}
+
+/** A flag was evaluated: later error events carry it and its value (Sentry's feature flags
+ * integration). Does nothing while reporting is off. */
+export function noteFlag(key: string, on: boolean, sentry: Pick<typeof Sentry, "getClient"> = Sentry): void {
+  sentry
+    .getClient()
+    ?.getIntegrationByName<Sentry.FeatureFlagsIntegration>("FeatureFlags")
+    ?.addFeatureFlag(key, on);
 }
 
 /** Starts Sentry when the build has a DSN; returns whether it did. */
@@ -82,6 +94,8 @@ export function startErrors(config: AppConfig, sentry: Pick<typeof Sentry, "init
     // Traces go through OpenTelemetry on the backend; the app sends errors and sessions only.
     tracesSampleRate: 0,
     maxBreadcrumbs: 30,
+    // The flags evaluated in this run and their values ride along on each event.
+    integrations: [Sentry.featureFlagsIntegration()],
     beforeSend: (event, hint) => scrub(event, hint),
   });
   return true;
