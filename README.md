@@ -78,6 +78,10 @@ status, so the SDLC tool joins it to the backend's errors from the same request 
 Server failures a screen shows are reported through `reportError`; being offline or a 4xx is not a
 fault and isn't.
 
+Every event is tagged `component` with this app's name (`src/component.ts`), so the SDLC tool
+routes its issues to this component whatever the Sentry project is called. When the tool creates a
+repo from this template, it puts the component's name in the files `.vrixel/identity` lists.
+
 Each event also names the feature flags this install evaluated and their values (Sentry's feature
 flags integration). An error that happens only with a feature on is plain in the issue.
 

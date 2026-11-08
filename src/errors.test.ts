@@ -32,6 +32,7 @@ it("with a DSN, reports errors and sessions but no screenshots, views or people"
     attachViewHierarchy: false,
     tracesSampleRate: 0,
     integrations: [{ name: "FeatureFlags" }], // each event names the flags and their values
+    initialScope: { tags: { component: "template-mobile" } }, // the tool routes issues by it
   });
   const sent = opts.beforeSend!({ type: undefined, message: "x", user: { id: "1" } }, {});
   expect(sent).toEqual({ type: undefined, breadcrumbs: [], logentry: undefined });

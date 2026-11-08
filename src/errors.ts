@@ -15,6 +15,7 @@ import * as Sentry from "@sentry/react-native";
 import { ApiError } from "./api/http";
 import { cohorts } from "./cohorts";
 import type { AppConfig } from "./config";
+import { COMPONENT } from "./component";
 
 type ErrorEvent = Parameters<NonNullable<Sentry.ReactNativeOptions["beforeSend"]>>[0];
 
@@ -96,6 +97,8 @@ export function startErrors(config: AppConfig, sentry: Pick<typeof Sentry, "init
     maxBreadcrumbs: 30,
     // The flags evaluated in this run and their values ride along on each event.
     integrations: [Sentry.featureFlagsIntegration()],
+    // Every report names its component, so the SDLC tool routes its issues to it.
+    initialScope: { tags: { component: COMPONENT } },
     beforeSend: (event, hint) => scrub(event, hint),
   });
   return true;
