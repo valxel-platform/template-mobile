@@ -1,0 +1,6 @@
+# Files that carry this template's name. When the SDLC tool creates a repo from the template, it
+# replaces the template's name with the new component's in each, so the app and its error reports
+# (the `component` tag) name the component and its errors route to it.
+src/component.ts
+package.json
+app.config.ts
