@@ -1,0 +1,53 @@
+# Performance smoke test, on pull requests the Vrixel SDLC labels vrixel:perf-smoke or
+# vrixel:perf-full. Main's app and the PR's are exported for Android the same way on this runner,
+# and the JavaScript bundle is measured as people download it in an update (compressed).
+# perf/compare.py posts "perf-smoke / report": failed when the PR's bundle is more than 20% bigger
+# than main's or over the budget (3 MB). App start and screen timings come from the sampled
+# performance data in Sentry, release over release.
+name: perf
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: perf-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  perf-smoke:
+    name: perf-smoke
+    if: contains(github.event.pull_request.labels.*.name, 'vrixel:perf-smoke') || contains(github.event.pull_request.labels.*.name, 'vrixel:perf-full')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      statuses: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: pr
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: main
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: pr/.nvmrc
+      - name: Export main's bundle, then the PR's
+        run: |
+          mkdir -p out
+          for v in main pr; do
+            (cd $v && npm ci --no-audit --no-fund && npx expo export --platform android --output-dir "$GITHUB_WORKSPACE/out/export-$v")
+            python3 pr/perf/bundle_size.py out/export-$v out/$v.json
+          done
+      - name: Judge and report
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          REPORT_SHA: ${{ github.event.pull_request.head.sha }}
+        run: python3 pr/perf/compare.py --kind mobile --run out/pr.json --reference out/main.json --regression 20 --context "perf-smoke / report"

@@ -193,3 +193,14 @@ exists, and the App Store app id (`ascAppId`) in the submit profiles.
   the BFF has no verifier yet.
 - **Crash reporting**: the rollout reads Play's vitals; add an SDK (Sentry, Crashlytics) for
   stack traces, and keep PHI out of its events.
+
+## Performance tests
+
+When the Vrixel SDLC labels a pull request `vrixel:perf-smoke` (screens, the API client, the
+outbox, dependencies or app settings change; or the reviewer saw a performance risk), `perf.yml`
+exports main's app and the PR's for Android and measures the JavaScript bundle as people download it
+in an update (compressed; about 2.1 MB for the template). `perf/compare.py` posts
+`perf-smoke / report`: failed when the PR's bundle is more than 20% bigger than main's or over the
+budget (3 MB). App start and screen timings come from the sampled performance data in Sentry
+(`SENTRY_TRACES_SAMPLE_RATE`), compared release over release during the staged rollout; a mobile
+app has no staging load test.
