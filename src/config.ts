@@ -18,6 +18,9 @@ export interface AppConfig {
   scheme: string;
   /** Sentry's DSN for error reports; empty when reporting is off (src/errors.ts). */
   sentryDsn: string;
+  /** Share of app sessions (0 to 1) that send performance data: app start, slow and frozen
+   * frames, and API call timings (paths only). 0: errors and sessions only. */
+  sentryTracesSampleRate: number;
 }
 
 export class ConfigError extends Error {}
@@ -54,6 +57,7 @@ export function readConfig(extra: unknown): AppConfig {
     phi: app.phi === true,
     scheme: text("scheme"),
     sentryDsn: typeof app.sentryDsn === "string" ? app.sentryDsn.trim() : "",
+    sentryTracesSampleRate: rate(app.sentryTracesSampleRate),
   };
   if (config.sentryDsn && !DSN.test(config.sentryDsn)) {
     throw new ConfigError("extra.app.sentryDsn must look like https://<key>@<host>/<project id>");
@@ -63,6 +67,11 @@ export function readConfig(extra: unknown): AppConfig {
   }
   if (!config.scopes.includes("openid")) config.scopes.unshift("openid");
   return config;
+}
+
+/** A sample rate between 0 and 1; anything else is 0 (no performance data). */
+function rate(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1 ? value : 0;
 }
 
 /** Where the product's API is, through the BFF's mobile route. */

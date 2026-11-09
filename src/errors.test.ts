@@ -1,7 +1,7 @@
 import type { ReactNativeOptions } from "@sentry/react-native";
 import * as Sentry from "@sentry/react-native";
 import { ApiError } from "./api/http";
-import { noteFlag, reportError, scrub, startErrors } from "./errors";
+import { noteFlag, reportError, scrub, scrubTransaction, startErrors } from "./errors";
 import { config } from "./test/fakes";
 
 jest.mock("@sentry/react-native", () => ({
@@ -105,4 +105,28 @@ it("names each evaluated flag on later error events, while reporting is on", () 
   expect(getIntegrationByName).toHaveBeenCalledWith("FeatureFlags");
   expect(addFeatureFlag).toHaveBeenCalledWith("ms.ms-feat-3.kiosk", true);
   expect(() => noteFlag("ms.x", false)).not.toThrow(); // reporting off: nothing to tell
+});
+
+it("sends performance data for a share of sessions, with paths only", () => {
+  const sentry = fakeSentry();
+  startErrors({ ...config, sentryDsn: dsn, sentryTracesSampleRate: 0.05 }, sentry);
+  const opts = sentry.init.mock.calls[0]![0];
+  expect(opts.tracesSampleRate).toBe(0.05);
+  const tx = scrubTransaction({
+    type: "transaction",
+    user: { id: "u-1" },
+    request: { url: "https://app.example.com/mobile/api/patients?name=Jane" },
+    spans: [
+      {
+        span_id: "a",
+        trace_id: "b",
+        start_timestamp: 1,
+        description: "GET https://app.example.com/mobile/api/patients?name=Jane",
+        data: { url: "https://app.example.com/mobile/api/patients?name=Jane", "http.query": "name=Jane" },
+      },
+    ],
+  });
+  expect(JSON.stringify(tx)).not.toContain("Jane");
+  expect(tx.user).toBeUndefined();
+  expect(tx.spans?.[0]?.description).toBe("GET https://app.example.com/mobile/api/patients");
 });

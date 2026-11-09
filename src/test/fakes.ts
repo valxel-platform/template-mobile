@@ -15,6 +15,7 @@ export const config: AppConfig = {
   phi: false,
   scheme: "com.vrixel.example",
   sentryDsn: "",
+  sentryTracesSampleRate: 0,
 };
 
 /** A JWT-shaped token with these claims (unsigned: only ever decoded for display). */

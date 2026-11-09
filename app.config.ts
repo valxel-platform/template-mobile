@@ -17,6 +17,7 @@ import type { ConfigContext, ExpoConfig } from "expo/config";
  * | APP_PHI                 | true: the app shows or stores PHI          |
  * | SENTRY_DSN              | Sentry project for error reports (optional)|
  * | SENTRY_BAA              | true: Sentry is under a BAA (PHI apps)     |
+ * | SENTRY_TRACES_SAMPLE_RATE | share of sessions with performance data (0.05) |
  * | EAS_PROJECT_ID          | the EAS project, for builds and updates    |
  */
 const env = (name: string, fallback = ""): string =>
@@ -101,6 +102,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         phi,
         scheme: appId + suffix,
         sentryDsn,
+        sentryTracesSampleRate: Number(env("SENTRY_TRACES_SAMPLE_RATE", "0.05")),
       },
     },
   };
