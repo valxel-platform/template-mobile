@@ -67,6 +67,27 @@ export function scrub(event: ErrorEvent, hint?: EventHint): ErrorEvent {
   return event;
 }
 
+type TransactionEvent = Parameters<NonNullable<Sentry.ReactNativeOptions["beforeSendTransaction"]>>[0];
+
+/** A performance event keeps timings, routes and API paths; never people, queries or extras. */
+export function scrubTransaction(event: TransactionEvent): TransactionEvent {
+  delete event.user;
+  delete event.extra;
+  if (event.request) event.request = { url: pathOnly(event.request.url) };
+  for (const span of event.spans ?? []) {
+    const data = span.data as Record<string, unknown> | undefined;
+    if (!data) continue;
+    for (const key of ["url", "http.url", "url.full", "http.query", "http.fragment"]) {
+      if (key in data)
+        data[key] = key.startsWith("http.q") || key === "http.fragment" ? undefined : pathOnly(data[key]);
+    }
+    if (typeof span.description === "string")
+      span.description = pathOnly(span.description) ?? span.description;
+  }
+  event.breadcrumbs = [];
+  return event;
+}
+
 /** Reports an error the app handled (shown to the person) but that someone should fix. Does
  * nothing while reporting is off. */
 export function reportError(error: unknown): void {
@@ -92,8 +113,10 @@ export function startErrors(config: AppConfig, sentry: Pick<typeof Sentry, "init
     // Sentry's default sends no personal data; scrub() removes whatever else could carry it.
     attachScreenshot: false,
     attachViewHierarchy: false,
-    // Traces go through OpenTelemetry on the backend; the app sends errors and sessions only.
-    tracesSampleRate: 0,
+    // A share of sessions send performance data (app start, slow and frozen frames, API call
+    // timings): the app's side of a slow feature. Paths only, like everything else.
+    tracesSampleRate: config.sentryTracesSampleRate,
+    beforeSendTransaction: (event) => scrubTransaction(event),
     maxBreadcrumbs: 30,
     // The flags evaluated in this run and their values ride along on each event.
     integrations: [Sentry.featureFlagsIntegration()],

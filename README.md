@@ -52,17 +52,18 @@ A development build talks to `http://10.0.2.2:8080` (the Android emulator's view
 machine): run the product's BFF there and Keycloak on `:8180`. Settings come from `app.config.ts`;
 EAS build profiles (`eas.json`) set them per environment:
 
-| Variable        | Example                                       |                                              |
-| --------------- | --------------------------------------------- | -------------------------------------------- |
-| `APP_ENV`       | `development`, `dev`, `staging`, `production` | Store builds: staging and production         |
-| `APP_ID`        | `com.vrixel.example`                          | Bundle id, package and URL scheme            |
-| `APP_ORIGIN`    | `https://example.vrixel.com`                  | The product's BFF                            |
-| `APP_ISSUER`    | `https://id.vrixel.com/realms/example`        | The product's Keycloak realm                 |
-| `APP_CLIENT_ID` | `example-mobile`                              | This app's public client in the realm        |
-| `APP_SCOPES`    | `openid profile offline_access example-api`   | The product's API scope puts its audience in |
-| `APP_PHI`       | `true`                                        | The app shows or stores PHI                  |
-| `SENTRY_DSN`    | `https://<key>@o1.ingest.sentry.io/42`        | Error and crash reports (unset: off)         |
-| `SENTRY_BAA`    | `true`                                        | Needed for reports from an app with PHI      |
+| Variable                    | Example                                       |                                                                                                                                               |
+| --------------------------- | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `APP_ENV`                   | `development`, `dev`, `staging`, `production` | Store builds: staging and production                                                                                                          |
+| `APP_ID`                    | `com.vrixel.example`                          | Bundle id, package and URL scheme                                                                                                             |
+| `APP_ORIGIN`                | `https://example.vrixel.com`                  | The product's BFF                                                                                                                             |
+| `APP_ISSUER`                | `https://id.vrixel.com/realms/example`        | The product's Keycloak realm                                                                                                                  |
+| `APP_CLIENT_ID`             | `example-mobile`                              | This app's public client in the realm                                                                                                         |
+| `APP_SCOPES`                | `openid profile offline_access example-api`   | The product's API scope puts its audience in                                                                                                  |
+| `APP_PHI`                   | `true`                                        | The app shows or stores PHI                                                                                                                   |
+| `SENTRY_DSN`                | `https://<key>@o1.ingest.sentry.io/42`        | Error and crash reports (unset: off)                                                                                                          |
+| `SENTRY_TRACES_SAMPLE_RATE` | `0.05`                                        | Share of sessions that send performance data (app start, slow and frozen frames, API call timings; paths only). `0`: errors and sessions only |
+| `SENTRY_BAA`                | `true`                                        | Needed for reports from an app with PHI                                                                                                       |
 
 Development and test builds install beside the store app, with `.<env>` appended to the id.
 
