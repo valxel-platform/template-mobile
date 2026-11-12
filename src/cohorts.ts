@@ -9,21 +9,34 @@
  * the BFF (`POST <origin>/mobile/flag-cohorts`, with the person's token), which adds them up for
  * everyone and logs them for the tool. Signed out, nothing is sent.
  *
- * Only counts leave the device: flag keys, on or off, and how many minutes failed.
+ * The product events the app tracks (`track("checkin_completed")`, events.ts) ride in the same post:
+ * on each side of every flag used that minute, so a gradual release can compare how often people
+ * with a feature on do them, and in total, which the BFF logs for the tool's staging check.
+ *
+ * Only counts leave the device: flag keys, on or off, how many minutes failed, and how many times
+ * each named event happened.
  */
 import type { Hook } from "@openfeature/web-sdk";
 import type { Http } from "./api/http";
 
 const KEY = /^[A-Za-z0-9._-]{1,200}$/;
 const MAX_FLAGS = 50;
+/** The BFF's limits for one person's minute: at most 20 event names, each counted up to 120. */
+export const MAX_EVENTS = 20;
+export const MAX_COUNT = 120;
+export const EVENT = /^[a-z][a-z0-9_]*(\.[a-z0-9_]+)*$/;
 
-type Side = { requests: number; errors: number };
-export type CohortPost = { flags: Record<string, { on?: Side; off?: Side }> };
+type Side = { requests: number; errors: number; events?: Record<string, number> };
+export type CohortPost = {
+  flags?: Record<string, { on?: Side; off?: Side }>;
+  events?: Record<string, number>;
+};
 
 export class FlagCohorts {
   private readonly used = new Map<string, boolean>();
   private failed = false;
   private active = false;
+  private readonly happened = new Map<string, number>();
 
   /** A flag was evaluated: from now on each minute counts for it, on the side it last had. */
   see(key: string, on: boolean): void {
@@ -36,6 +49,13 @@ export class FlagCohorts {
     this.failed = true;
   }
 
+  /** A product event happened this minute (events.ts `track`). */
+  record(event: string): void {
+    if (!EVENT.test(event) || event.length > 100) return;
+    if (!this.happened.has(event) && this.happened.size >= MAX_EVENTS) return;
+    this.happened.set(event, Math.min(MAX_COUNT, (this.happened.get(event) ?? 0) + 1));
+  }
+
   /** The person was using the app this minute (it was in the foreground). */
   touch(): void {
     this.active = true;
@@ -45,14 +65,20 @@ export class FlagCohorts {
   take(): CohortPost | null {
     const counted = this.active || this.failed;
     const errors = this.failed ? 1 : 0;
+    const events = this.happened.size ? Object.fromEntries([...this.happened].sort()) : undefined;
     this.active = false;
     this.failed = false;
-    if (!counted || this.used.size === 0) return null;
-    const flags: CohortPost["flags"] = {};
-    for (const [key, on] of this.used) {
-      flags[key] = { [on ? "on" : "off"]: { requests: 1, errors } };
+    this.happened.clear();
+    const post: CohortPost = {};
+    if ((counted || events) && this.used.size > 0) {
+      const flags: NonNullable<CohortPost["flags"]> = {};
+      for (const [key, on] of this.used) {
+        flags[key] = { [on ? "on" : "off"]: { requests: 1, errors, ...(events ? { events } : {}) } };
+      }
+      post.flags = flags;
     }
-    return { flags };
+    if (events) post.events = events;
+    return post.flags || post.events ? post : null;
   }
 }
 

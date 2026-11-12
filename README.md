@@ -161,6 +161,15 @@ API call that failed (a 5xx or no answer; a 4xx isn't). Every minute the counts 
 and logs them for the tool. Only flag keys, on or off, and counts leave the phone. Signed out,
 nothing is sent.
 
+## Product events
+
+As in the web template: when the HLD names this app as the one that records a feature's goal
+event, `track("checkin_completed")` where it happens. The count rides in the minute's post to the
+BFF, on each side of every flag in use and in total; the BFF logs it as `vrixel.events` for the
+SDLC tool's staging check and the gradual-release comparison. Only names and counts leave the
+phone. A name that isn't lowercase words throws in development and tests and is dropped in a
+production build; at most 20 names and 120 of each per minute.
+
 ## Releases
 
 `release.yml` runs when the Vrixel SDLC dispatches `vrixel-release` for a stage, or
