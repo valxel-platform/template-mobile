@@ -77,7 +77,7 @@ describe("flags", () => {
   });
 
   it("reads flags over OFREP from the product's origin", () => {
-    expect(flagProvider("https://example.vrixel.com").metadata.name).toMatch(/Remote Evaluation/);
+    expect(flagProvider("https://example.valxel.com").metadata.name).toMatch(/Remote Evaluation/);
   });
 });
 

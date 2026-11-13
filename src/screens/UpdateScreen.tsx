@@ -4,7 +4,7 @@ import { Body, Button, Screen, Title } from "../ui/components";
 /** Store pages: set them for the product's app (App Store id, Play package). */
 export const STORE_URL = Platform.select({
   ios: "itms-apps://apps.apple.com/app/id0000000000",
-  default: "market://details?id=com.vrixel.template",
+  default: "market://details?id=com.valxel.template",
 });
 
 /** The BFF answered 426: this version is older than the oldest the API still supports. */

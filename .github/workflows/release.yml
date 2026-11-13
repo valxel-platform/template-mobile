@@ -1,15 +1,15 @@
 # Store apps can't be deployed continuously: each release is a build that people install and keep
-# for months. The Vrixel SDLC drives this workflow instead of a deployment:
+# for months. The Valxel SDLC drives this workflow instead of a deployment:
 #
-#   vrixel-release, stage dev:        test build (APK) against dev, Maestro on an emulator
+#   valxel-release, stage dev:        test build (APK) against dev, Maestro on an emulator
 #                                     -> "integration / report", "release / dev"
-#   vrixel-release, stage staging:    test build against staging, Maestro -> "e2e / report";
+#   valxel-release, stage staging:    test build against staging, Maestro -> "e2e / report";
 #                                     store build to TestFlight and Play's internal track -> "release / staging"
-#   vrixel-release, stage production: store build, submitted to the App Store and to Play's production
+#   valxel-release, stage production: store build, submitted to the App Store and to Play's production
 #                                     track at 1% -> "release / production"
-#   vrixel-rollout {fraction, context}: Play vitals health check -> <context> (e.g. "rollout / 10%");
+#   valxel-rollout {fraction, context}: Play vitals health check -> <context> (e.g. "rollout / 10%");
 #                                     if healthy, widen the Play rollout to the fraction (1 completes it)
-#   vrixel-rollout {halt: true}:      halt the Play rollout
+#   valxel-rollout {halt: true}:      halt the Play rollout
 #
 # The App Store side uses Apple's phased release (seven days, set in App Store Connect when the
 # version is submitted for review); pause it there if Play's health check fails.
@@ -21,7 +21,7 @@ name: release
 
 on:
   repository_dispatch:
-    types: [vrixel-release, vrixel-rollout]
+    types: [valxel-release, valxel-rollout]
   workflow_dispatch:
     inputs:
       action: { description: "release or rollout", required: true, type: choice, options: [release, rollout] }
@@ -40,7 +40,7 @@ permissions:
   contents: read
 
 env:
-  ACTION: ${{ github.event.action == 'vrixel-rollout' && 'rollout' || github.event.action == 'vrixel-release' && 'release' || inputs.action }}
+  ACTION: ${{ github.event.action == 'valxel-rollout' && 'rollout' || github.event.action == 'valxel-release' && 'release' || inputs.action }}
   STAGE: ${{ github.event.client_payload.stage || inputs.stage || 'production' }}
   REPORT_SHA: ${{ github.event.client_payload.sha || inputs.sha }}
   FRACTION: ${{ github.event.client_payload.fraction || inputs.fraction }}
@@ -56,7 +56,7 @@ concurrency:
 jobs:
   test-build:
     name: test build
-    if: (github.event.action == 'vrixel-release' || inputs.action == 'release') && (github.event.client_payload.stage || inputs.stage) != 'production'
+    if: (github.event.action == 'valxel-release' || inputs.action == 'release') && (github.event.client_payload.stage || inputs.stage) != 'production'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     outputs:
@@ -143,7 +143,7 @@ jobs:
     needs: e2e
     if: >-
       !cancelled() && (needs.e2e.result == 'success' || needs.e2e.result == 'skipped') &&
-      (github.event.action == 'vrixel-release' || inputs.action == 'release') &&
+      (github.event.action == 'valxel-release' || inputs.action == 'release') &&
       (github.event.client_payload.stage || inputs.stage) != 'dev'
     runs-on: ubuntu-latest
     timeout-minutes: 120
@@ -184,7 +184,7 @@ jobs:
 
   rollout:
     name: rollout
-    if: github.event.action == 'vrixel-rollout' || inputs.action == 'rollout'
+    if: github.event.action == 'valxel-rollout' || inputs.action == 'rollout'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:

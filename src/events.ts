@@ -9,8 +9,8 @@
  *
  * The count rides in the minute's post to the BFF (cohorts.ts): on each side of every flag in use,
  * so a gradual release can compare how often people with a feature on do it against people with it
- * off, and in total, which the BFF logs as `vrixel.events {"checkin_completed":12}` for the tool's
- * staging check and counts on its `vrixel.events` meter.
+ * off, and in total, which the BFF logs as `valxel.events {"checkin_completed":12}` for the tool's
+ * staging check and counts on its `valxel.events` meter.
  *
  * Only the name and how many times leave the device: no attributes, screens or anything about the
  * person. A name that isn't lowercase words joined by _ or . is a mistake in the code: it throws

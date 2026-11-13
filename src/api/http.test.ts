@@ -29,7 +29,7 @@ function setup(answers: (Response | Error)[], overrides: Partial<HttpOptions> = 
   };
   const onUpgradeRequired = jest.fn();
   const http = createHttp({
-    base: "https://example.vrixel.com/mobile",
+    base: "https://example.valxel.com/mobile",
     session,
     appVersion: "1.4.0",
     platform: "ios",
@@ -54,7 +54,7 @@ describe("createHttp", () => {
     expect(res).toMatchObject({ status: 202, body: { eventId: "e1", status: "accepted" } });
     // No traceresponse: the trace is the one this app started.
     expect(traceIdOf(header(0, "traceparent"))).toBe(res.traceId);
-    expect(calls[0]?.url).toBe("https://example.vrixel.com/mobile/api/v1/greetings/ada");
+    expect(calls[0]?.url).toBe("https://example.valxel.com/mobile/api/v1/greetings/ada");
     expect(calls[0]?.init.body).toBe('{"name":"Ada"}');
     expect(header(0, "Authorization")).toBe("Bearer access-1");
     expect(header(0, "X-App-Version")).toBe("1.4.0");

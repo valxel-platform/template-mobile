@@ -14,7 +14,7 @@ jest.mock("expo-auth-session", () => {
   const actual = jest.requireActual<typeof AuthSession>("expo-auth-session");
   return {
     ...actual,
-    makeRedirectUri: jest.fn(() => "com.vrixel.example://callback"),
+    makeRedirectUri: jest.fn(() => "com.valxel.example://callback"),
     AuthRequest: jest.fn().mockImplementation(() => ({ codeVerifier: "verifier", promptAsync: mockPrompt })),
     exchangeCodeAsync: jest.fn(),
     refreshAsync: jest.fn(),
@@ -51,7 +51,7 @@ describe("keycloak", () => {
         clientId: "example-mobile",
         usePKCE: true,
         responseType: "code",
-        redirectUri: "com.vrixel.example://callback",
+        redirectUri: "com.valxel.example://callback",
       }),
     );
     expect(mockPrompt).toHaveBeenCalledWith(discovery, { preferEphemeralSession: true });
@@ -100,8 +100,8 @@ describe("keycloak", () => {
       discovery,
     );
     expect(WebBrowser.openAuthSessionAsync).toHaveBeenCalledWith(
-      "https://id/logout?client_id=example-mobile&id_token_hint=id%20token&post_logout_redirect_uri=com.vrixel.example%3A%2F%2Fcallback",
-      "com.vrixel.example://callback",
+      "https://id/logout?client_id=example-mobile&id_token_hint=id%20token&post_logout_redirect_uri=com.valxel.example%3A%2F%2Fcallback",
+      "com.valxel.example://callback",
       { preferEphemeralSession: true },
     );
 

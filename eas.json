@@ -7,7 +7,7 @@
     "base": {
       "node": "22.20.0",
       "env": {
-        "APP_ID": "com.vrixel.example",
+        "APP_ID": "com.valxel.example",
         "APP_NAME": "Example",
         "APP_CLIENT_ID": "example-mobile",
         "APP_SCOPES": "openid profile offline_access example-api",
@@ -32,8 +32,8 @@
       "ios": { "simulator": true },
       "env": {
         "APP_ENV": "dev",
-        "APP_ORIGIN": "https://dev.example.vrixel.com",
-        "APP_ISSUER": "https://id.dev.vrixel.com/realms/example"
+        "APP_ORIGIN": "https://dev.example.valxel.com",
+        "APP_ISSUER": "https://id.dev.valxel.com/realms/example"
       }
     },
     "test-staging": {
@@ -41,8 +41,8 @@
       "channel": "test-staging",
       "env": {
         "APP_ENV": "staging",
-        "APP_ORIGIN": "https://staging.example.vrixel.com",
-        "APP_ISSUER": "https://id.staging.vrixel.com/realms/example"
+        "APP_ORIGIN": "https://staging.example.valxel.com",
+        "APP_ISSUER": "https://id.staging.valxel.com/realms/example"
       }
     },
     "staging": {
@@ -52,8 +52,8 @@
       "autoIncrement": true,
       "env": {
         "APP_ENV": "staging",
-        "APP_ORIGIN": "https://staging.example.vrixel.com",
-        "APP_ISSUER": "https://id.staging.vrixel.com/realms/example"
+        "APP_ORIGIN": "https://staging.example.valxel.com",
+        "APP_ISSUER": "https://id.staging.valxel.com/realms/example"
       }
     },
     "production": {
@@ -63,8 +63,8 @@
       "autoIncrement": true,
       "env": {
         "APP_ENV": "production",
-        "APP_ORIGIN": "https://example.vrixel.com",
-        "APP_ISSUER": "https://id.vrixel.com/realms/example"
+        "APP_ORIGIN": "https://example.valxel.com",
+        "APP_ISSUER": "https://id.valxel.com/realms/example"
       }
     }
   },

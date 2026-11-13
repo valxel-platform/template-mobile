@@ -7,7 +7,7 @@ export interface AppConfig {
   env: string;
   /** The product's BFF origin. The app calls `<origin>/mobile/api/...` and reads flags at `<origin>/ofrep/`. */
   origin: string;
-  /** The product's Keycloak realm, e.g. https://id.vrixel.com/realms/emr */
+  /** The product's Keycloak realm, e.g. https://id.valxel.com/realms/emr */
   issuer: string;
   /** This app's public client in that realm */
   clientId: string;
