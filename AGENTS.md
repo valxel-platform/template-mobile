@@ -40,7 +40,7 @@ Docs: https://docs.expo.dev/eas/index.md
 - Expo Go only includes its bundled native modules. After adding a library with native code, the app needs a development build: `npx expo run:ios|android` locally, or `eas build --profile development`.
 - Prefer recommended Expo modules over third-party libraries, and check your available skills before adding dependencies. Docs: https://docs.expo.dev/versions/latest/index.md
 
-## Vrixel rules for this app
+## Valxel rules for this app
 
 - Changes to data go through the outbox (`outbox.enqueue(...)`), never a direct write call: they must survive no signal and be retried with the same idempotency key.
 - Tokens only through `Session`; never store them or anything about a person outside the Keychain/Keystore and the outbox. No PHI in logs, push notifications or crash reports.

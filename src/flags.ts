@@ -1,7 +1,7 @@
 /**
  * Feature flags through OpenFeature, as in the web template.
  *
- * The Vrixel SDLC tool gives each feature a flag in the product's Flipt when its design is
+ * The Valxel SDLC tool gives each feature a flag in the product's Flipt when its design is
  * approved: on in dev and staging, off in production until the feature is released. A store
  * release can carry a feature switched off and the tool switches it on later, without a new
  * build. Put the feature's new screens behind it:
@@ -23,7 +23,7 @@ export function flagProvider(origin: string): Provider {
   return new OFREPWebProvider({ baseUrl: origin, pollInterval: 60_000 });
 }
 
-const DEVICE_KEY = "vrixel.flags.install";
+const DEVICE_KEY = "valxel.flags.install";
 
 type KeyStore = Pick<typeof SecureStore, "getItemAsync" | "setItemAsync">;
 

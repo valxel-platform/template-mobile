@@ -8,12 +8,12 @@ import type { Services } from "../services";
 
 export const config: AppConfig = {
   env: "development",
-  origin: "https://example.vrixel.com",
-  issuer: "https://id.vrixel.com/realms/example",
+  origin: "https://example.valxel.com",
+  issuer: "https://id.valxel.com/realms/example",
   clientId: "example-mobile",
   scopes: ["openid", "profile", "offline_access"],
   phi: false,
-  scheme: "com.vrixel.example",
+  scheme: "com.valxel.example",
   sentryDsn: "",
   sentryTracesSampleRate: 0,
 };

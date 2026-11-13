@@ -2,13 +2,13 @@
 """Google Play staged rollout: check the release's health, then widen (or halt) it.
 
 The production submit (eas.json) starts the release on the production track at 1% of users
-("inProgress"). The Vrixel SDLC widens it step by step (vrixel-rollout in release.yml): before
+("inProgress"). The Valxel SDLC widens it step by step (valxel-rollout in release.yml): before
 each step this checks the crash rate of the version being rolled out against the threshold, from
 Play's Android vitals. Vitals arrive once a day, so steps are at least a day apart.
 
-usage: play.py health  --package com.vrixel.example [--max-crash-rate 0.01] [--min-users 50]
-       play.py rollout --package com.vrixel.example --fraction 0.1    (1.0 completes the release)
-       play.py halt    --package com.vrixel.example
+usage: play.py health  --package com.valxel.example [--max-crash-rate 0.01] [--min-users 50]
+       play.py rollout --package com.valxel.example --fraction 0.1    (1.0 completes the release)
+       play.py halt    --package com.valxel.example
 
 Needs PLAY_SERVICE_ACCOUNT_JSON: a service account with release access to the app in the Play
 Console and the Play Developer Reporting API enabled. `pip install -r requirements.txt`.

@@ -8,10 +8,10 @@ import type { ConfigContext, ExpoConfig } from "expo/config";
  * | Variable                | Example                                    |
  * | ----------------------- | ------------------------------------------ |
  * | APP_ENV                 | development, preview, production           |
- * | APP_ID                  | com.vrixel.example (bundle id, scheme)     |
+ * | APP_ID                  | com.valxel.example (bundle id, scheme)     |
  * | APP_NAME                | Example                                    |
- * | APP_ORIGIN              | https://example.vrixel.com (the BFF)       |
- * | APP_ISSUER              | https://id.vrixel.com/realms/example       |
+ * | APP_ORIGIN              | https://example.valxel.com (the BFF)       |
+ * | APP_ISSUER              | https://id.valxel.com/realms/example       |
  * | APP_CLIENT_ID           | example-mobile                             |
  * | APP_SCOPES              | openid profile offline_access example-api  |
  * | APP_PHI                 | true: the app shows or stores PHI          |
@@ -25,7 +25,7 @@ const env = (name: string, fallback = ""): string =>
 
 export default ({ config }: ConfigContext): ExpoConfig => {
   const appEnv = env("APP_ENV", "development");
-  const appId = env("APP_ID", "com.vrixel.template");
+  const appId = env("APP_ID", "com.valxel.template");
   const phi = env("APP_PHI", "false") === "true";
   const projectId = env("EAS_PROJECT_ID");
   // Error reports leave the device: an app with PHI sends them only under a BAA (src/errors.ts).

@@ -1,6 +1,6 @@
 # Mobile template (React Native, Expo, TypeScript)
 
-The golden path for Vrixel mobile apps on iOS and Android. The Vrixel SDLC creates product repos
+The golden path for Valxel mobile apps on iOS and Android. The Valxel SDLC creates product repos
 from this template (role `mobile`); you can also use **Use this template** on GitHub.
 
 It differs from the web template in two ways that shape everything else: a phone can't keep a
@@ -27,7 +27,7 @@ stages and stays installed for months.
 
 ## Checks and how the pipeline reads them
 
-| Check                                        | Where         | Required  | Read by the Vrixel SDLC as                                      |
+| Check                                        | Where         | Required  | Read by the Valxel SDLC as                                      |
 | -------------------------------------------- | ------------- | --------- | --------------------------------------------------------------- |
 | `unit`                                       | `ci.yml`      | yes       | the `unit` suite (lint, format, types, tests, doctor, bundles)  |
 | `contract`                                   | `ci.yml`      | yes       | the `contract` suite                                            |
@@ -45,7 +45,7 @@ npx expo run:android      # or run:ios: a development build (native modules need
 npm test                  # unit tests with coverage
 npm run test:contract     # writes pacts/template-mobile-template-service.json
 npm run lint && npm run typecheck && npm run format:check
-maestro test .maestro -e APP_ID=com.vrixel.template.development -e TEST_USERNAME=... -e TEST_PASSWORD=...
+maestro test .maestro -e APP_ID=com.valxel.template.development -e TEST_USERNAME=... -e TEST_PASSWORD=...
 ```
 
 A development build talks to `http://10.0.2.2:8080` (the Android emulator's view of your
@@ -55,9 +55,9 @@ EAS build profiles (`eas.json`) set them per environment:
 | Variable                    | Example                                       |                                                                                                                                               |
 | --------------------------- | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | `APP_ENV`                   | `development`, `dev`, `staging`, `production` | Store builds: staging and production                                                                                                          |
-| `APP_ID`                    | `com.vrixel.example`                          | Bundle id, package and URL scheme                                                                                                             |
-| `APP_ORIGIN`                | `https://example.vrixel.com`                  | The product's BFF                                                                                                                             |
-| `APP_ISSUER`                | `https://id.vrixel.com/realms/example`        | The product's Keycloak realm                                                                                                                  |
+| `APP_ID`                    | `com.valxel.example`                          | Bundle id, package and URL scheme                                                                                                             |
+| `APP_ORIGIN`                | `https://example.valxel.com`                  | The product's BFF                                                                                                                             |
+| `APP_ISSUER`                | `https://id.valxel.com/realms/example`        | The product's Keycloak realm                                                                                                                  |
 | `APP_CLIENT_ID`             | `example-mobile`                              | This app's public client in the realm                                                                                                         |
 | `APP_SCOPES`                | `openid profile offline_access example-api`   | The product's API scope puts its audience in                                                                                                  |
 | `APP_PHI`                   | `true`                                        | The app shows or stores PHI                                                                                                                   |
@@ -81,7 +81,7 @@ fault and isn't.
 
 Every event is tagged `component` with this app's name (`src/component.ts`), so the SDLC tool
 routes its issues to this component whatever the Sentry project is called. When the tool creates a
-repo from this template, it puts the component's name in the files `.vrixel/identity` lists.
+repo from this template, it puts the component's name in the files `.valxel/identity` lists.
 
 Each event also names the feature flags this install evaluated and their values (Sentry's feature
 flags integration). An error that happens only with a feature on is plain in the issue.
@@ -104,8 +104,8 @@ refuses a refresh. Without signal the tokens are kept and changes wait. Sign-out
 refresh token, ends the browser's Keycloak session and wipes the outbox.
 
 The realm needs a public client for the app (`platform-security`, `mobile:` in the product's
-spec) with the redirect URI of each build: `com.vrixel.example://callback`,
-`com.vrixel.example.dev://callback`, and so on.
+spec) with the redirect URI of each build: `com.valxel.example://callback`,
+`com.valxel.example.dev://callback`, and so on.
 
 ## Calling the API
 
@@ -165,15 +165,15 @@ nothing is sent.
 
 As in the web template: when the HLD names this app as the one that records a feature's goal
 event, `track("checkin_completed")` where it happens. The count rides in the minute's post to the
-BFF, on each side of every flag in use and in total; the BFF logs it as `vrixel.events` for the
+BFF, on each side of every flag in use and in total; the BFF logs it as `valxel.events` for the
 SDLC tool's staging check and the gradual-release comparison. Only names and counts leave the
 phone. A name that isn't lowercase words throws in development and tests and is dropped in a
 production build; at most 20 names and 120 of each per minute.
 
 ## Releases
 
-`release.yml` runs when the Vrixel SDLC dispatches `vrixel-release` for a stage, or
-`vrixel-rollout` to widen a production rollout:
+`release.yml` runs when the Valxel SDLC dispatches `valxel-release` for a stage, or
+`valxel-rollout` to widen a production rollout:
 
 1. **dev**: an APK built against dev is installed on an emulator and the Maestro flows run.
 2. **staging**: the same against staging, then a store build goes to TestFlight and Play's
@@ -205,7 +205,7 @@ exists, and the App Store app id (`ascAppId`) in the submit profiles.
 
 ## Performance tests
 
-When the Vrixel SDLC labels a pull request `vrixel:perf-smoke` (screens, the API client, the
+When the Valxel SDLC labels a pull request `valxel:perf-smoke` (screens, the API client, the
 outbox, dependencies or app settings change; or the reviewer saw a performance risk), `perf.yml`
 exports main's app and the PR's for Android and measures the JavaScript bundle as people download it
 in an update (compressed; about 2.1 MB for the template). `perf/compare.py` posts

@@ -1,5 +1,5 @@
-# Performance smoke test, on pull requests the Vrixel SDLC labels vrixel:perf-smoke or
-# vrixel:perf-full. Main's app and the PR's are exported for Android the same way on this runner,
+# Performance smoke test, on pull requests the Valxel SDLC labels valxel:perf-smoke or
+# valxel:perf-full. Main's app and the PR's are exported for Android the same way on this runner,
 # and the JavaScript bundle is measured as people download it in an update (compressed).
 # perf/compare.py posts "perf-smoke / report": failed when the PR's bundle is more than 20% bigger
 # than main's or over the budget (3 MB). App start and screen timings come from the sampled
@@ -20,7 +20,7 @@ concurrency:
 jobs:
   perf-smoke:
     name: perf-smoke
-    if: contains(github.event.pull_request.labels.*.name, 'vrixel:perf-smoke') || contains(github.event.pull_request.labels.*.name, 'vrixel:perf-full')
+    if: contains(github.event.pull_request.labels.*.name, 'valxel:perf-smoke') || contains(github.event.pull_request.labels.*.name, 'valxel:perf-full')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
