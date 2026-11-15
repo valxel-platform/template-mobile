@@ -1,0 +1,3 @@
+# Test fixtures that only look like secrets (gitleaks fingerprints: commit:file:rule:line).
+# New ones get a `gitleaks:allow` comment on the line instead.
+2effeaac7e7d4d37c3a162e2338babf4ce5205e0:src/api/client.pact.test.ts:generic-api-key:63

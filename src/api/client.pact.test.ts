@@ -60,7 +60,7 @@ describe("greetings API contract", () => {
         const command = saveGreeting("ada", { name: "Ada", message: "Hello" });
         const res = await http(server.url).send({
           ...command,
-          idempotencyKey: "0b0f4a3e-6c8e-4a39-9d55-2f4b2c1d9e10",
+          idempotencyKey: "0b0f4a3e-6c8e-4a39-9d55-2f4b2c1d9e10", // a test UUID, not a secret: gitleaks:allow
         });
         expect(res.status).toBe(202);
       }));
