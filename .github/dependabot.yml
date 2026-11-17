@@ -5,6 +5,7 @@ updates:
   - package-ecosystem: npm
     directory: /
     schedule: { interval: weekly }
+    cooldown: { default-days: 7 }  # newly published versions wait a week (security updates do not)
     groups:
       dev-dependencies: { dependency-type: development, update-types: [minor, patch] }
     open-pull-requests-limit: 10
@@ -24,6 +25,8 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly }
+    cooldown: { default-days: 7 }  # newly published versions wait a week (security updates do not)
   - package-ecosystem: pip
     directory: /.github/scripts
     schedule: { interval: weekly }
+    cooldown: { default-days: 7 }  # newly published versions wait a week (security updates do not)
