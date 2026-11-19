@@ -8,7 +8,7 @@ updates:
     cooldown: { default-days: 7 } # newly published versions wait a week (security updates do not)
     groups:
       dev-dependencies: { dependency-type: development, update-types: [minor, patch] }
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0
     ignore:
       - dependency-name: "expo"
         update-types: [version-update:semver-major]
@@ -26,7 +26,9 @@ updates:
     directory: /
     schedule: { interval: weekly }
     cooldown: { default-days: 7 } # newly published versions wait a week (security updates do not)
+    open-pull-requests-limit: 0
   - package-ecosystem: pip
     directory: /.github/scripts
     schedule: { interval: weekly }
     cooldown: { default-days: 7 } # newly published versions wait a week (security updates do not)
+    open-pull-requests-limit: 0
